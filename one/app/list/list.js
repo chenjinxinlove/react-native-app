@@ -11,12 +11,14 @@ import {
   Image,
   Dimensions,
   ActivityIndicator,
-  RefreshControl
+  RefreshControl,
+  AlertIOS
 } from 'react-native';
 
 import Icon from 'react-native-vector-icons/Ionicons';
 import request from '../common/request';
 import config from '../config';
+import Detail from './detail';
 
 
 let cachedResults = {
@@ -25,40 +27,67 @@ let cachedResults = {
   total: 0
 }
 
-class List extends Component {
-  constructor(){
-    super();
-    let ds = new ListView.DataSource({rowHasChanged: (r1, r2) => r1 !== r2});
+
+class Item extends Component {
+  constructor(props){
+    super(props);
+    let row = this.props.row;
     this.state = {
-      dataSource: ds.cloneWithRows([
-      ]),
-      isLoadingTail: false,
-      isRefreshing: false
-    };
+      up: row.voted,
+      row: row
+    }
+
   }
-  renderRow(row) {
+  _up () {
+    let up = this.state.up;
+    let row = this.state.row;
+    let url = config.api.base + config.api.up;
+    let body = {
+      id: row._id,
+      up: up ? 'yes' : 'no',
+      accessToken: 'abccg'
+    };
+
+    request.post(url, body)
+      .then(data => {
+        if (data && data.success) {
+          this.setState({
+            up: !up
+          })
+        } else {
+          AlertIOS.alert('点赞失败，稍后重试');
+        }
+      })
+      .catch(error => {
+        console.log(error);
+        AlertIOS.alert('点赞失败，稍后重试');
+      })
+  }
+  render() {
+    let row = this.state.row;
     return (
-      <TouchableHighlight onPress={this._onPressButton}>
+      <TouchableHighlight onPress={this.props.onSelect}>
         <View style={styles.item}>
           <Text style={styles.title}>{row.title}</Text>
           <Image
             source={{uri: row.thumb}}
             style={styles.thumb}
           >
-          <Icon
-            name='ios-play'
-            size={28}
-            style={styles.play}
-          />
+            <Icon
+              name='ios-play'
+              size={28}
+              style={styles.play}
+            />
           </Image>
           <View style={styles.itemFooter}>
             <View style={styles.handleBox}>
               <Icon
-                name='ios-heart-outline'
+                name={this.state.up ? 'ios-heart' : 'ios-heart-outline'}
                 size={28}
-                style={styles.up}
+                style={[styles.up, this.state.up ? null : styles.down]}
+                onPress={this._up.bind(this)}
               />
-              <Text style={styles.handleText}>喜欢</Text>
+              <Text style={styles.handleText} onPress={this._up.bind(this)}>喜欢</Text>
             </View>
             <View style={styles.handleBox}>
               <Icon
@@ -72,6 +101,29 @@ class List extends Component {
         </View>
       </TouchableHighlight>
     )
+  }
+}
+
+
+class List extends Component {
+  constructor(){
+    super();
+    let ds = new ListView.DataSource({rowHasChanged: (r1, r2) => r1 !== r2});
+    this.state = {
+      dataSource: ds.cloneWithRows([
+      ]),
+      isLoadingTail: false,
+      isRefreshing: false
+    };
+    this._loadPage = this._loadPage.bind(this)
+    this.renderRow = this.renderRow.bind(this)
+  }
+  renderRow(row) {
+    return  <Item
+              key={row._id}
+              onSelect={ () => this._loadPage(row)}
+              row={row}
+            />
   }
 
   componentDidMount() {
@@ -186,6 +238,16 @@ class List extends Component {
     this._fetchData(0)
   }
 
+  _loadPage(row) {
+    this.props.navigator.push({
+      name: 'detail',
+      component: Detail,
+      params: {
+        row: row
+      }
+    })
+  }
+
   render() {
     return (
       <View style={styles.container}>
@@ -281,6 +343,10 @@ const styles = StyleSheet.create({
     color: '#333'
   },
   up:{
+    fontSize: 22,
+    color: '#ed7b66'
+  },
+  down: {
     fontSize: 22,
     color: '#333'
   },

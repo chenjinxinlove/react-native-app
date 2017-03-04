@@ -10,7 +10,8 @@ import {
   StyleSheet,
   Text,
   View,
-  TabBarIOS
+  TabBarIOS,
+  Navigator
 } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
 
@@ -38,7 +39,19 @@ export default class one extends Component {
             selectedTab: 'find',
           });
         }}>
-          <List ></List>
+          <Navigator
+            initialRoute={{
+              component: List,
+              name: 'list',
+            }}
+            configureScene={(route) => {
+              return Navigator.SceneConfigs.FloatFromRight
+            }}
+            renderScene={(route, navigator) => {
+              let MyComponent = route.component;
+              return <MyComponent {...route.params}  navigator={navigator} />
+            }}
+          />
         </Icon.TabBarItem>
         <Icon.TabBarItem
           iconName='ios-recording-outline'

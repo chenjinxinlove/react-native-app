@@ -12,6 +12,7 @@ export default  config = {
   },
   api: {
     base: 'http://rap.taobao.org/mockjs/11643/',
-    creations: 'api/creations'
+    creations: 'api/creations',
+    up: 'api/up'
   }
 }
